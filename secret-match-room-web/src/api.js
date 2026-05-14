@@ -115,3 +115,15 @@ export async function replaceVotesInDb({ roomId, fromMemberId, toMemberIds }) {
   if (error) throw error;
   return data;
 }
+
+export async function updateRoomPhase(roomId, phase) {
+  const { data, error } = await supabase
+    .from("rooms")
+    .update({ phase })
+    .eq("id", roomId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
