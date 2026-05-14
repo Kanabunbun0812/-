@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { createRoomInDb, addMemberToDb, getRoomByCode, getMembers, deleteMemberFromDb } from "./api";
-
+import {
+  createRoomInDb,
+  addMemberToDb,
+  getRoomByCode,
+  getMembers,
+  deleteMemberFromDb,
+  getVotes,
+  replaceVotesInDb,
+} from "./api";
 function Panel({ title, children }) {
   return (
     <div className="mb-4 rounded-[2rem] border border-[#f7d7a2]/15 bg-black/30 p-4">
