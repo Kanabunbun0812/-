@@ -165,23 +165,49 @@ export default function MutualMatchVotingApp() {
     setVotes({});
   }
 
-  function createRoom() {
+  async function createRoom() {
     if (!creatorName.trim() || !creatorSeatId) return;
-    const id = `creator-${Date.now()}`;
-    const member = {
-      id,
-      name: creatorName.trim(),
-      gender: creatorGender,
-      avatar: creatorGender === "女性" ? "🌹" : "🥂",
-      seatId: creatorSeatId,
-    };
-    setSeats((prev) => prev.map((s) => (s.id === creatorSeatId ? { ...s, member } : s)));
-    setCurrentMemberId(null);
-    setSelectedSeatId(creatorSeatId);
-    setProgressUnlocked(true);
-    setMode("room");
-    setTab("seats");
-    setPhase("entry");
+  
+    try {
+      const room = await createRoomInDb({
+        roomName,
+        tableShape,
+        seatCount,
+        allowMultiple,
+        maxVotes,
+      });
+  
+      const creator = await addMemberToDb({
+        roomId: room.id,
+        seatId: creatorSeatId,
+        name: creatorName.trim(),
+        gender: creatorGender,
+      });
+  
+      const member = {
+        id: creator.id,
+        name: creator.name,
+        gender: creator.gender,
+        avatar: creator.avatar,
+        seatId: creator.seat_id,
+      };
+  
+      setRoomCode(room.room_code);
+      setSeats((prev) =>
+        prev.map((s) => (s.id === creatorSeatId ? { ...s, member } : s))
+      );
+      setCurrentMemberId(null);
+      setSelectedSeatId(creatorSeatId);
+      setProgressUnlocked(true);
+      setMode("room");
+      setTab("seats");
+      setPhase("entry");
+  
+      window.history.pushState({}, "", `/r/${room.room_code}`);
+    } catch (error) {
+      console.error(error);
+      alert("部屋作成に失敗しました。Supabase設定を確認してください。");
+    }
   }
 
   function registerSeat() {
