@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    min-height: 100%;
+    background: #080409;
+  }
+  body {
+    margin: 0;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-2xl border border-[#f7d7a2]/15 bg-[#090407] px-4 py-3 text-white outline-none placeholder:text-white/30;
+  }
+  .screen {
+    @apply flex-1 rounded-[2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-4 shadow-2xl backdrop-blur-xl;
+  }
+  .personCard {
+    @apply flex items-center gap-3 rounded-3xl border p-3 text-left transition active:scale-[0.98];
+  }
+  .smallBtn {
+    @apply rounded-full border border-[#f7d7a2]/15 px-3 py-2 text-xs text-[#f7d7a2];
+  }
+  .mainBtn {
+    @apply rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-[#f7d7a2] px-5 py-4 text-sm font-black text-white disabled:opacity-40;
+  }
+  .outlineBtn {
+    @apply rounded-2xl border border-[#f7d7a2]/30 bg-black/30 px-5 py-4 text-sm font-black text-[#ffe8b7] disabled:opacity-40;
+  }
+  .goldBtn {
+    @apply w-full rounded-2xl bg-[#f7d7a2] px-5 py-4 text-sm font-black text-[#1a0b11] disabled:opacity-40;
+  }
+}
