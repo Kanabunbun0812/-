@@ -7,6 +7,7 @@ import {
   deleteMemberFromDb,
   getVotes,
   replaceVotesInDb,
+  updateRoomPhase,
 } from "./api";
 function Panel({ title, children }) {
   return (
@@ -487,18 +488,40 @@ export default function MutualMatchVotingApp() {
     setSelectedSeatId(null);
   }
 
-  function startVoting() {
+  async function startVoting() {
     if (!progressUnlocked || filledSeats < 2) return;
-
+  
+    if (dbRoom) {
+      try {
+        const updatedRoom = await updateRoomPhase(dbRoom.id, "voting");
+        setDbRoom(updatedRoom);
+      } catch (error) {
+        console.error(error);
+        alert("投票タイム開始に失敗しました。");
+        return;
+      }
+    }
+  
     setPhase("voting");
     setTab("identify");
     setCurrentMemberId(null);
     setPendingVoterId(null);
   }
 
-  function publishResults() {
+  async function publishResults() {
     if (!canPublish) return;
-
+  
+    if (dbRoom) {
+      try {
+        const updatedRoom = await updateRoomPhase(dbRoom.id, "result");
+        setDbRoom(updatedRoom);
+      } catch (error) {
+        console.error(error);
+        alert("結果公表に失敗しました。");
+        return;
+      }
+    }
+  
     setPhase("result");
     setTab("result");
     setCurrentMemberId(null);
