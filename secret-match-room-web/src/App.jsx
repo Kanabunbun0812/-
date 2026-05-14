@@ -205,7 +205,20 @@ export default function MutualMatchVotingApp() {
     if (!currentMember) return [];
     return members.filter((m) => (votes[m.id] || []).includes(currentMember.id));
   }, [members, votes, currentMember]);
-
+  
+　function buildVotesFromDb(dbVotes) {
+    const nextVotes = {};
+  
+    dbVotes.forEach((vote) => {
+      if (!nextVotes[vote.from_member_id]) {
+        nextVotes[vote.from_member_id] = [];
+      }
+  
+      nextVotes[vote.from_member_id].push(vote.to_member_id);
+    });
+  
+    return nextVotes;
+  }
   function buildSeatsFromMembers(count, dbMembers) {
     const nextSeats = makeSeats(count);
 
@@ -231,10 +244,13 @@ export default function MutualMatchVotingApp() {
 
   async function reloadRoom(room = dbRoom) {
     if (!room) return;
-
+  
     try {
       const dbMembers = await getMembers(room.id);
+      const dbVotes = await getVotes(room.id);
+  
       setSeats(buildSeatsFromMembers(room.seat_count, dbMembers));
+      setVotes(buildVotesFromDb(dbVotes));
     } catch (error) {
       console.error(error);
       alert("部屋情報の再読み込みに失敗しました。");
@@ -255,7 +271,9 @@ export default function MutualMatchVotingApp() {
       try {
         const room = await getRoomByCode(code);
         const dbMembers = await getMembers(room.id);
+        const dbVotes = await getVotes(room.id);
 
+        setVotes(buildVotesFromDb(dbVotes));
         setDbRoom(room);
         setRoomCode(room.room_code);
         setRoomName(room.room_name);
@@ -528,7 +546,25 @@ export default function MutualMatchVotingApp() {
     });
   }
 
-  function submitVote() {
+  async function submitVote() {
+    if (!currentMember) return;
+  
+    if (dbRoom) {
+      try {
+        await replaceVotesInDb({
+          roomId: dbRoom.id,
+          fromMemberId: currentMember.id,
+          toMemberIds: selectedVotes,
+        });
+  
+        await reloadRoom(dbRoom);
+      } catch (error) {
+        console.error(error);
+        alert("投票の保存に失敗しました。");
+        return;
+      }
+    }
+  
     setCurrentMemberId(null);
     setPendingVoterId(null);
     setTab("identify");
