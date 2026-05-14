@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   createRoomInDb,
   addMemberToDb,
@@ -98,6 +98,132 @@ function FooterLinks() {
       <a href="/terms" className="underline hover:text-[#e6c9aa]/80">利用規約</a>
       <a href="/contact" className="underline hover:text-[#e6c9aa]/80">お問い合わせ</a>
     </div>
+  );
+}
+
+/* ───────── reveal animation ───────── */
+
+function RevealAnimation({ members, roundNumber, onFinished }) {
+  const [step, setStep] = useState(0);
+  // steps: 0=集計中, 1=矢印飛ぶ, 2=ハート収束, 3=カウントダウン3, 4=2, 5=1, 6=done
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const delays = [1200, 1500, 1500, 1000, 1000, 1000, 800];
+    let current = 0;
+
+    function next() {
+      current++;
+      if (current >= delays.length) {
+        onFinished();
+        return;
+      }
+      setStep(current);
+      timerRef.current = setTimeout(next, delays[current]);
+    }
+
+    timerRef.current = setTimeout(next, delays[0]);
+    return () => clearTimeout(timerRef.current);
+  }, [onFinished]);
+
+  // 浮遊パーティクル
+  const particles = useMemo(() => {
+    const items = [];
+    const emojis = ["💘", "💗", "💕", "✨", "🌹", "💫", "♡", "🥂"];
+    for (let i = 0; i < 20; i++) {
+      items.push({
+        emoji: emojis[i % emojis.length],
+        left: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 2 + Math.random() * 2,
+        size: 16 + Math.random() * 20,
+      });
+    }
+    return items;
+  }, []);
+
+  return (
+    <section className="flex flex-1 flex-col items-center justify-center rounded-[2.2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-5 shadow-[0_0_70px_rgba(244,63,94,.22)] backdrop-blur-xl overflow-hidden relative min-h-[70vh]">
+
+      {/* floating particles */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {step >= 1 && particles.map((p, i) => (
+          <span
+            key={i}
+            className="reveal-particle absolute"
+            style={{
+              left: `${p.left}%`,
+              bottom: "-40px",
+              fontSize: `${p.size}px`,
+              animationDelay: `${p.delay}s`,
+              animationDuration: `${p.duration}s`,
+            }}
+          >
+            {p.emoji}
+          </span>
+        ))}
+      </div>
+
+      {/* pulsing glow behind center */}
+      <div className={`absolute w-64 h-64 rounded-full transition-all duration-1000 ${
+        step >= 2
+          ? "bg-rose-500/30 scale-110 blur-3xl"
+          : "bg-rose-500/10 scale-75 blur-2xl"
+      }`} />
+
+      {/* main content */}
+      <div className="relative z-10 text-center">
+        {step === 0 && (
+          <div className="reveal-fade-in">
+            <p className="text-xs tracking-[0.5em] text-[#f7d7a2]/70">COUNTING VOTES</p>
+            <p className="mt-4 font-serif text-3xl font-black text-[#ffe8b7]">投票を集計中...</p>
+            <div className="mt-6 flex justify-center gap-2">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="reveal-dot inline-block h-3 w-3 rounded-full bg-rose-400" style={{ animationDelay: `${i * 0.2}s` }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="reveal-fade-in">
+            <p className="text-xs tracking-[0.5em] text-[#f7d7a2]/70">MATCHING ARROWS</p>
+            <p className="mt-4 font-serif text-3xl font-black text-[#ffe8b7]">矢印を照合中...</p>
+            <p className="mt-4 text-6xl reveal-pulse">💘</p>
+            <p className="mt-3 text-sm text-[#e6c9aa]/65">{members.length}人の想いが交差する</p>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="reveal-fade-in">
+            <p className="text-xs tracking-[0.5em] text-[#f7d7a2]/70">FINDING MATCHES</p>
+            <p className="mt-4 font-serif text-3xl font-black text-[#ffe8b7]">両想いを探しています...</p>
+            <div className="mt-6 flex justify-center gap-3">
+              <span className="text-5xl reveal-bounce" style={{ animationDelay: "0s" }}>♡</span>
+              <span className="text-5xl reveal-bounce" style={{ animationDelay: "0.15s" }}>♡</span>
+              <span className="text-5xl reveal-bounce" style={{ animationDelay: "0.3s" }}>♡</span>
+            </div>
+          </div>
+        )}
+
+        {(step === 3 || step === 4 || step === 5) && (
+          <div className="reveal-fade-in">
+            <p className="text-xs tracking-[0.5em] text-[#f7d7a2]/70">
+              第{roundNumber}回 結果発表
+            </p>
+            <p className="mt-6 reveal-countdown font-serif font-black text-[#ffe8b7]" key={step}>
+              {6 - step}
+            </p>
+          </div>
+        )}
+
+        {step === 6 && (
+          <div className="reveal-fade-in">
+            <p className="text-8xl">💗</p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -302,6 +428,7 @@ function MainApp() {
   const [showIncoming, setShowIncoming] = useState(false);
 
   const [roundNumber, setRoundNumber] = useState(1);
+  const [revealing, setRevealing] = useState(false);
 
   const members = useMemo(() => seats.filter((s) => s.member).map((s) => s.member), [seats]);
   const selectedSeat = seats.find((s) => s.id === selectedSeatId);
@@ -531,6 +658,7 @@ function MainApp() {
     setShowIncoming(false);
     setLoadingRoom(false);
     setRoundNumber(1);
+    setRevealing(false);
     window.history.pushState({}, "", "/");
   }
 
@@ -732,10 +860,16 @@ function MainApp() {
       }
     }
 
-    setPhase("result");
-    setTab("result");
+    // 演出開始
+    setRevealing(true);
     setCurrentMemberId(null);
     setPendingVoterId(null);
+  }
+
+  function onRevealFinished() {
+    setRevealing(false);
+    setPhase("result");
+    setTab("result");
   }
 
   async function startNextRound() {
@@ -1185,6 +1319,20 @@ function MainApp() {
             </button>
           </div>
         </section>
+      </AppShell>
+    );
+  }
+
+  /* ─── reveal animation ─── */
+
+  if (revealing) {
+    return (
+      <AppShell>
+        <RevealAnimation
+          members={members}
+          roundNumber={roundNumber}
+          onFinished={onRevealFinished}
+        />
       </AppShell>
     );
   }
