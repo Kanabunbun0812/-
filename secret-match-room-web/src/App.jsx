@@ -141,8 +141,8 @@ export default function MutualMatchVotingApp() {
   const [currentMemberId, setCurrentMemberId] = useState(null);
 
   const [targetMode, setTargetMode] = useState("opposite");
-  const [allowMultiple, setAllowMultiple] = useState(true);
-  const [maxVotes, setMaxVotes] = useState(2);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [maxVotes, setMaxVotes] = useState(1);
   const [votes, setVotes] = useState({});
   const [showIncoming, setShowIncoming] = useState(false);
 
@@ -292,8 +292,8 @@ export default function MutualMatchVotingApp() {
     setPendingVoterId(null);
     setCurrentMemberId(null);
     setTargetMode("opposite");
-    setAllowMultiple(true);
-    setMaxVotes(2);
+    setAllowMultiple(false);
+    setMaxVotes(1);
     setVotes({});
     setShowIncoming(false);
     setDbRoom(null);
@@ -656,11 +656,11 @@ export default function MutualMatchVotingApp() {
         <section className="flex flex-1 flex-col justify-between rounded-[2.2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-5 shadow-[0_0_70px_rgba(244,63,94,.22)] backdrop-blur-xl">
           <div>
             <div className="mb-8 text-center">
-              <p className="text-xs tracking-[0.45em] text-[#f7d7a2]/70">SECRET MATCH</p>
+              <p className="text-xs tracking-[0.45em] text-[#f7d7a2]/70">MM</p>
               <h1 className="mt-4 font-serif text-5xl font-black leading-tight text-[#ffe8b7]">
-                Match
+                Mutual
                 <br />
-                Room
+                Match
               </h1>
               <p className="mx-auto mt-4 max-w-xs text-sm leading-7 text-[#e6c9aa]/75">
                 ログインなし。幹事が部屋URLを作り、全員が席と名前を入力。本人確認後に投票し、最後に両想いだけ一括発表します。
@@ -786,25 +786,45 @@ export default function MutualMatchVotingApp() {
                 </Choice>
               </div>
 
-              <label className="flex items-center justify-between text-sm font-bold text-[#ffe8b7]">
-                <span>複数人投票を許可</span>
-                <input
-                  type="checkbox"
-                  checked={allowMultiple}
-                  onChange={(e) => setAllowMultiple(e.target.checked)}
-                  className="h-5 w-5 accent-rose-500"
-                />
-              </label>
-
-              {allowMultiple && (
-                <select value={maxVotes} onChange={(e) => setMaxVotes(Number(e.target.value))} className="input mt-3">
-                  {[2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>
-                      最大 {n}人まで
-                    </option>
-                  ))}
-                </select>
-              )}
+              <p className="mb-3 text-xs leading-5 text-[#e6c9aa]/65">
+              基本は1人だけ選びます。イベントの雰囲気に合わせて、複数人選択もOKにできます。
+            </p>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Choice
+                active={!allowMultiple}
+                onClick={() => {
+                  setAllowMultiple(false);
+                  setMaxVotes(1);
+                }}
+              >
+                ♡ 1人だけ選ぶ
+              </Choice>
+            
+              <Choice
+                active={allowMultiple}
+                onClick={() => {
+                  setAllowMultiple(true);
+                  setMaxVotes(2);
+                }}
+              >
+                ♡ 複数人もOK
+              </Choice>
+            </div>
+            
+            {allowMultiple && (
+              <select
+                value={maxVotes}
+                onChange={(e) => setMaxVotes(Number(e.target.value))}
+                className="input mt-3"
+              >
+                {[2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    最大 {n}人まで
+                  </option>
+                ))}
+              </select>
+            )}
             </Panel>
 
             <button
@@ -1105,7 +1125,7 @@ export default function MutualMatchVotingApp() {
         </div>
 
         <button type="button" onClick={submitVote} className="mainBtn mt-5">
-          ♡ 投票を確定して次の人へ（{selectedVotes.length}/{maxSelectable}）
+          ♡ 投票を確定する（{selectedVotes.length}/{maxSelectable}）
         </button>
       </section>
     );
