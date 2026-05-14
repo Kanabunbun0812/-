@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { createRoomInDb, addMemberToDb } from "./api";
+import React, { useEffect, useMemo, useState } from "react";
+import { createRoomInDb, addMemberToDb, getRoomByCode, getMembers, deleteMemberFromDb } from "./api";
 
 function Panel({ title, children }) {
   return (
@@ -121,6 +121,8 @@ export default function MutualMatchVotingApp() {
 
   const [roomName, setRoomName] = useState("Midnight Lounge");
   const [roomCode, setRoomCode] = useState(makeRoomCode());
+  const [dbRoom, setDbRoom] = useState(null);
+  const [loadingRoom, setLoadingRoom] = useState(false);
   const [tableShape, setTableShape] = useState("round");
   const [seatCount, setSeatCount] = useState(8);
   const [seats, setSeats] = useState(makeSeats(8));
@@ -197,12 +199,86 @@ export default function MutualMatchVotingApp() {
     return members.filter((m) => (votes[m.id] || []).includes(currentMember.id));
   }, [members, votes, currentMember]);
 
+  function buildSeatsFromMembers(count, dbMembers) {
+    const nextSeats = makeSeats(count);
+
+    dbMembers.forEach((member) => {
+      const index = Number(String(member.seat_id).replace("seat-", "")) - 1;
+
+      if (index >= 0 && index < nextSeats.length) {
+        nextSeats[index] = {
+          ...nextSeats[index],
+          member: {
+            id: member.id,
+            name: member.name,
+            gender: member.gender,
+            avatar: member.avatar || (member.gender === "女性" ? "🌹" : "🥂"),
+            seatId: member.seat_id,
+          },
+        };
+      }
+    });
+
+    return nextSeats;
+  }
+
+  async function reloadRoom(room = dbRoom) {
+    if (!room) return;
+
+    try {
+      const dbMembers = await getMembers(room.id);
+      setSeats(buildSeatsFromMembers(room.seat_count, dbMembers));
+    } catch (error) {
+      console.error(error);
+      alert("部屋情報の再読み込みに失敗しました。");
+    }
+  }
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/r\/([^/]+)/);
+
+    if (!match) return;
+
+    const code = match[1];
+
+    async function loadRoomFromUrl() {
+      setLoadingRoom(true);
+
+      try {
+        const room = await getRoomByCode(code);
+        const dbMembers = await getMembers(room.id);
+
+        setDbRoom(room);
+        setRoomCode(room.room_code);
+        setRoomName(room.room_name);
+        setTableShape(room.table_shape);
+        setSeatCount(room.seat_count);
+        setAllowMultiple(room.allow_multiple);
+        setMaxVotes(room.max_votes);
+        setPhase(room.phase);
+        setSeats(buildSeatsFromMembers(room.seat_count, dbMembers));
+        setMode("room");
+        setTab("seats");
+      } catch (error) {
+        console.error(error);
+        alert("部屋が見つかりませんでした。URLを確認してください。");
+        setMode("home");
+      } finally {
+        setLoadingRoom(false);
+      }
+    }
+
+    loadRoomFromUrl();
+  }, []);
+
   function resetAll() {
     setMode("home");
     setTab("seats");
     setPhase("entry");
     setRoomName("Midnight Lounge");
     setRoomCode(makeRoomCode());
+    setDbRoom(null);
     setTableShape("round");
     setSeatCount(8);
     setSeats(makeSeats(8));
@@ -220,6 +296,8 @@ export default function MutualMatchVotingApp() {
     setMaxVotes(2);
     setVotes({});
     setShowIncoming(false);
+    setDbRoom(null);
+    setLoadingRoom(false);
     window.history.pushState({}, "", "/");
   }
 
@@ -229,6 +307,7 @@ export default function MutualMatchVotingApp() {
     setPhase("entry");
     setRoomName("Midnight Lounge");
     setRoomCode(makeRoomCode());
+    setDbRoom(null);
     setTableShape("round");
     setSeatCount(8);
     setSeats(demoSeats(8));
@@ -286,6 +365,7 @@ export default function MutualMatchVotingApp() {
         seatId: creator.seat_id,
       };
 
+      setDbRoom(room);
       setRoomCode(room.room_code);
       setSeats((prev) => prev.map((s) => (s.id === creatorSeatId ? { ...s, member } : s)));
       setCurrentMemberId(null);
@@ -302,12 +382,32 @@ export default function MutualMatchVotingApp() {
     }
   }
 
-  function registerSeat() {
+  async function registerSeat() {
     if (phase === "result") return;
     if (!selectedSeatId || !draftName.trim()) return;
 
     const existing = seats.find((s) => s.id === selectedSeatId)?.member;
     if (existing) return;
+
+    if (dbRoom) {
+      try {
+        await addMemberToDb({
+          roomId: dbRoom.id,
+          seatId: selectedSeatId,
+          name: draftName.trim(),
+          gender: draftGender,
+        });
+
+        await reloadRoom(dbRoom);
+        setSelectedSeatId(null);
+        setDraftName("");
+        return;
+      } catch (error) {
+        console.error(error);
+        alert("席登録に失敗しました。すでに誰かが登録した席かもしれません。");
+        return;
+      }
+    }
 
     const id = `member-${Date.now()}`;
     const member = {
@@ -323,25 +423,41 @@ export default function MutualMatchVotingApp() {
     setDraftName("");
   }
 
-  function clearSeat(seatId) {
+  async function clearSeat(seatId) {
     if (phase === "result") return;
 
     const target = seats.find((s) => s.id === seatId)?.member;
 
+    if (!target) {
+      setSelectedSeatId(null);
+      return;
+    }
+
+    if (dbRoom) {
+      try {
+        await deleteMemberFromDb(target.id);
+        await reloadRoom(dbRoom);
+        setSelectedSeatId(null);
+        return;
+      } catch (error) {
+        console.error(error);
+        alert("席の削除に失敗しました。");
+        return;
+      }
+    }
+
     setSeats((prev) => prev.map((s) => (s.id === seatId ? { ...s, member: null } : s)));
 
-    if (target) {
-      setVotes((prev) => {
-        const next = { ...prev };
-        delete next[target.id];
+    setVotes((prev) => {
+      const next = { ...prev };
+      delete next[target.id];
 
-        Object.keys(next).forEach((id) => {
-          next[id] = next[id].filter((v) => v !== target.id);
-        });
-
-        return next;
+      Object.keys(next).forEach((id) => {
+        next[id] = next[id].filter((v) => v !== target.id);
       });
-    }
+
+      return next;
+    });
 
     setSelectedSeatId(null);
   }
@@ -517,6 +633,20 @@ export default function MutualMatchVotingApp() {
           );
         })}
       </div>
+    );
+  }
+
+
+  if (loadingRoom) {
+    return (
+      <AppShell>
+        <section className="flex flex-1 items-center justify-center rounded-[2.2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-5 text-center shadow-[0_0_70px_rgba(244,63,94,.22)] backdrop-blur-xl">
+          <div>
+            <p className="text-xs tracking-[0.45em] text-[#f7d7a2]/70">LOADING ROOM</p>
+            <p className="mt-4 font-serif text-3xl font-black text-[#ffe8b7]">部屋を読み込み中</p>
+          </div>
+        </section>
+      </AppShell>
     );
   }
 
