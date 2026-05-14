@@ -31,6 +31,28 @@ export async function createRoomInDb({
   return data;
 }
 
+export async function getRoomByCode(roomCode) {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("room_code", roomCode)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getMembers(roomId) {
+  const { data, error } = await supabase
+    .from("members")
+    .select("*")
+    .eq("room_id", roomId)
+    .order("seat_id", { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function addMemberToDb({ roomId, seatId, name, gender }) {
   const avatar = gender === "女性" ? "🌹" : "🥂";
 
@@ -50,23 +72,11 @@ export async function addMemberToDb({ roomId, seatId, name, gender }) {
   return data;
 }
 
-export async function getRoomByCode(roomCode) {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("*")
-    .eq("room_code", roomCode)
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function getMembers(roomId) {
-  const { data, error } = await supabase
+export async function deleteMemberFromDb(memberId) {
+  const { error } = await supabase
     .from("members")
-    .select("*")
-    .eq("room_id", roomId);
+    .delete()
+    .eq("id", memberId);
 
   if (error) throw error;
-  return data;
 }
