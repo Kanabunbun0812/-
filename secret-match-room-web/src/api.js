@@ -80,3 +80,38 @@ export async function deleteMemberFromDb(memberId) {
 
   if (error) throw error;
 }
+export async function getVotes(roomId) {
+  const { data, error } = await supabase
+    .from("votes")
+    .select("*")
+    .eq("room_id", roomId);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function replaceVotesInDb({ roomId, fromMemberId, toMemberIds }) {
+  const { error: deleteError } = await supabase
+    .from("votes")
+    .delete()
+    .eq("room_id", roomId)
+    .eq("from_member_id", fromMemberId);
+
+  if (deleteError) throw deleteError;
+
+  if (!toMemberIds.length) return [];
+
+  const rows = toMemberIds.map((toMemberId) => ({
+    room_id: roomId,
+    from_member_id: fromMemberId,
+    to_member_id: toMemberId,
+  }));
+
+  const { data, error } = await supabase
+    .from("votes")
+    .insert(rows)
+    .select();
+
+  if (error) throw error;
+  return data;
+}
