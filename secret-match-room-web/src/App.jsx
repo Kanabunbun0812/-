@@ -293,10 +293,7 @@ export default function MutualMatchVotingApp() {
       <div className="min-h-screen overflow-hidden bg-[#080409] text-[#fff7ea]">
         <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_5%,rgba(244,63,94,0.24),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(251,191,36,0.12),transparent_22%),radial-gradient(circle_at_50%_100%,rgba(190,24,93,0.20),transparent_35%)]" />
         <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-24 pt-4 sm:max-w-lg">
-          <div className="mb-3 flex items-center justify-between text-xs text-[#f7d7a2]/70">
-            <span>9:41</span>
-            <span>●●● 5G 🔋</span>
-          </div>
+
           {children}
         </div>
       </div>
