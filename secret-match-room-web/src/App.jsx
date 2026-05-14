@@ -66,6 +66,17 @@ function Stat({ label, value }) {
   );
 }
 
+function AppShell({ children }) {
+  return (
+    <div className="min-h-screen overflow-hidden bg-[#080409] text-[#fff7ea]">
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_5%,rgba(244,63,94,0.24),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(251,191,36,0.12),transparent_22%),radial-gradient(circle_at_50%_100%,rgba(190,24,93,0.20),transparent_35%)]" />
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-24 pt-4 sm:max-w-lg">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const demoPeople = [
   ["りん", "女性", "🌹"],
   ["ゆうと", "男性", "🥂"],
@@ -433,16 +444,6 @@ export default function MutualMatchVotingApp() {
     return `${base} border-sky-300/45 bg-sky-500/20 text-sky-50`;
   }
 
-  function Shell({ children }) {
-    return (
-      <div className="min-h-screen overflow-hidden bg-[#080409] text-[#fff7ea]">
-        <div className="fixed inset-0 bg-[radial-gradient(circle_at_20%_5%,rgba(244,63,94,0.24),transparent_30%),radial-gradient(circle_at_90%_10%,rgba(251,191,36,0.12),transparent_22%),radial-gradient(circle_at_50%_100%,rgba(190,24,93,0.20),transparent_35%)]" />
-        <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-24 pt-4 sm:max-w-lg">
-          {children}
-        </div>
-      </div>
-    );
-  }
 
   function PhaseBadge() {
     const label =
@@ -521,7 +522,7 @@ export default function MutualMatchVotingApp() {
 
   if (mode === "home") {
     return (
-      <Shell>
+      <AppShell>
         <section className="flex flex-1 flex-col justify-between rounded-[2.2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-5 shadow-[0_0_70px_rgba(244,63,94,.22)] backdrop-blur-xl">
           <div>
             <div className="mb-8 text-center">
@@ -563,13 +564,13 @@ export default function MutualMatchVotingApp() {
             </button>
           </div>
         </section>
-      </Shell>
+      </AppShell>
     );
   }
 
   if (mode === "create") {
     return (
-      <Shell>
+      <AppShell>
         <section className="flex-1 rounded-[2.2rem] border border-[#f7d7a2]/20 bg-[#12080d]/80 p-5 shadow-[0_0_70px_rgba(244,63,94,.22)] backdrop-blur-xl">
           <div className="mb-5 flex items-center justify-between">
             <button
@@ -686,19 +687,19 @@ export default function MutualMatchVotingApp() {
             </button>
           </div>
         </section>
-      </Shell>
+      </AppShell>
     );
   }
 
   return (
-    <Shell>
+    <AppShell>
       <Header />
       <Tabs />
-      {tab === "seats" && <SeatsScreen />}
-      {tab === "identify" && <IdentifyScreen />}
-      {tab === "vote" && <VoteScreen />}
-      {tab === "result" && <ResultScreen />}
-    </Shell>
+      {tab === "seats" && SeatsScreen()}
+      {tab === "identify" && IdentifyScreen()}
+      {tab === "vote" && VoteScreen()}
+      {tab === "result" && ResultScreen()}
+    </AppShell>
   );
 
   function Header() {
